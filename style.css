@@ -106,3 +106,17 @@ label.button:hover {
 .zoom-controls span {
     font-weight: 600;
 }
+/* Tambahkan di akhir file style.css */
+#shareBtn {
+    background-color: #1976d2; /* Warna biru untuk 'share' */
+    color: white;
+}
+
+#shareBtn:hover {
+    background-color: #1565c0;
+}
+
+#shareBtn:disabled {
+    background-color: #bdbdbd;
+    cursor: not-allowed;
+}
