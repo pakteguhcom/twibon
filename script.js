@@ -27,23 +27,14 @@ function redrawCanvas() {
 
     // 2. Gambar foto pengguna (jika sudah diunggah)
     if (userImage.src) {
-        // Simpan konteks sebelum transformasi
-        ctx.save();
-        
-        // Hitung posisi tengah untuk zoom
         const imgWidth = userImage.width * scale;
         const imgHeight = userImage.height * scale;
-        
         ctx.drawImage(userImage, offsetX, offsetY, imgWidth, imgHeight);
-        
-        // Kembalikan konteks ke keadaan semula
-        ctx.restore();
     }
 
     // 3. Gambar bingkai di atasnya
     ctx.drawImage(frameImage, 0, 0, canvas.width, canvas.height);
 }
-
 
 // Event Listener saat bingkai selesai dimuat
 frameImage.onload = () => {
@@ -69,7 +60,6 @@ imageLoader.addEventListener('change', (e) => {
     reader.readAsDataURL(e.target.files[0]);
 }, false);
 
-
 // Event listener untuk kontrol zoom
 zoomInBtn.addEventListener('click', () => {
     scale += 0.05;
@@ -83,31 +73,47 @@ zoomOutBtn.addEventListener('click', () => {
     }
 });
 
-// Event listener untuk fungsionalitas geser (Pan/Drag)
-canvas.addEventListener('mousedown', (e) => {
+// --- FUNGSI UNTUK MEMULAI, MENGGESER, DAN MENGHENTIKAN DRAG ---
+function startDrag(e) {
     isDragging = true;
-    startX = e.clientX - canvas.offsetLeft - offsetX;
-    startY = e.clientY - canvas.offsetTop - offsetY;
+    // Dapatkan posisi awal baik dari mouse atau sentuhan
+    const clientX = e.clientX || e.touches[0].clientX;
+    const clientY = e.clientY || e.touches[0].clientY;
+    startX = clientX - canvas.offsetLeft - offsetX;
+    startY = clientY - canvas.offsetTop - offsetY;
     canvas.style.cursor = 'grabbing';
-});
+}
 
-canvas.addEventListener('mousemove', (e) => {
+function doDrag(e) {
     if (isDragging) {
-        offsetX = e.clientX - canvas.offsetLeft - startX;
-        offsetY = e.clientY - canvas.offsetTop - startY;
+        // Mencegah scroll halaman di mobile saat menggeser gambar
+        e.preventDefault(); 
+        const clientX = e.clientX || e.touches[0].clientX;
+        const clientY = e.clientY || e.touches[0].clientY;
+        offsetX = clientX - canvas.offsetLeft - startX;
+        offsetY = clientY - canvas.offsetTop - startY;
         redrawCanvas();
     }
-});
+}
 
-canvas.addEventListener('mouseup', () => {
+function stopDrag() {
     isDragging = false;
     canvas.style.cursor = 'grab';
-});
+}
 
-canvas.addEventListener('mouseleave', () => {
-    isDragging = false;
-    canvas.style.cursor = 'grab';
-});
+// --- PENAMBAHAN EVENT LISTENER UNTUK MOUSE DAN SENTUHAN ---
+
+// 1. Event Listener untuk Mouse (Desktop)
+canvas.addEventListener('mousedown', startDrag);
+canvas.addEventListener('mousemove', doDrag);
+canvas.addEventListener('mouseup', stopDrag);
+canvas.addEventListener('mouseleave', stopDrag);
+
+// 2. Event Listener untuk Sentuhan (Mobile)
+canvas.addEventListener('touchstart', startDrag);
+canvas.addEventListener('touchmove', doDrag);
+canvas.addEventListener('touchend', stopDrag);
+canvas.addEventListener('touchcancel', stopDrag);
 
 
 // Event listener untuk tombol download
