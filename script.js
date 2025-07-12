@@ -3,12 +3,13 @@ const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
 const imageLoader = document.getElementById('imageLoader');
 const downloadBtn = document.getElementById('downloadBtn');
+const shareBtn = document.getElementById('shareBtn'); // Ambil tombol bagikan
 const zoomInBtn = document.getElementById('zoomIn');
 const zoomOutBtn = document.getElementById('zoomOut');
 
 // Variabel untuk menyimpan gambar dan statusnya
 const frameImage = new Image();
-frameImage.src = 'twibbon.png'; // Pastikan nama file sesuai
+frameImage.src = 'twibbon.png'; 
 
 let userImage = new Image();
 let scale = 1.0;
@@ -22,17 +23,12 @@ let startY;
 
 // Fungsi utama untuk menggambar ulang kanvas
 function redrawCanvas() {
-    // 1. Bersihkan kanvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    // 2. Gambar foto pengguna (jika sudah diunggah)
     if (userImage.src) {
         const imgWidth = userImage.width * scale;
         const imgHeight = userImage.height * scale;
         ctx.drawImage(userImage, offsetX, offsetY, imgWidth, imgHeight);
     }
-
-    // 3. Gambar bingkai di atasnya
     ctx.drawImage(frameImage, 0, 0, canvas.width, canvas.height);
 }
 
@@ -48,13 +44,13 @@ imageLoader.addEventListener('change', (e) => {
         userImage = new Image();
         userImage.src = event.target.result;
         userImage.onload = () => {
-            // Reset posisi dan skala saat gambar baru dimuat
             scale = Math.max(canvas.width / userImage.width, canvas.height / userImage.height);
             offsetX = (canvas.width - userImage.width * scale) / 2;
             offsetY = (canvas.height - userImage.height * scale) / 2;
             
             redrawCanvas();
-            downloadBtn.disabled = false; // Aktifkan tombol download
+            downloadBtn.disabled = false;
+            shareBtn.disabled = false; // Aktifkan juga tombol bagikan
         };
     };
     reader.readAsDataURL(e.target.files[0]);
@@ -65,18 +61,16 @@ zoomInBtn.addEventListener('click', () => {
     scale += 0.05;
     redrawCanvas();
 });
-
 zoomOutBtn.addEventListener('click', () => {
-    if (scale > 0.1) { // Batasi zoom out
+    if (scale > 0.1) {
         scale -= 0.05;
         redrawCanvas();
     }
 });
 
-// --- FUNGSI UNTUK MEMULAI, MENGGESER, DAN MENGHENTIKAN DRAG ---
+// Fungsi untuk interaksi geser (drag & drop)
 function startDrag(e) {
     isDragging = true;
-    // Dapatkan posisi awal baik dari mouse atau sentuhan
     const clientX = e.clientX || e.touches[0].clientX;
     const clientY = e.clientY || e.touches[0].clientY;
     startX = clientX - canvas.offsetLeft - offsetX;
@@ -86,7 +80,6 @@ function startDrag(e) {
 
 function doDrag(e) {
     if (isDragging) {
-        // Mencegah scroll halaman di mobile saat menggeser gambar
         e.preventDefault(); 
         const clientX = e.clientX || e.touches[0].clientX;
         const clientY = e.clientY || e.touches[0].clientY;
@@ -101,25 +94,47 @@ function stopDrag() {
     canvas.style.cursor = 'grab';
 }
 
-// --- PENAMBAHAN EVENT LISTENER UNTUK MOUSE DAN SENTUHAN ---
-
-// 1. Event Listener untuk Mouse (Desktop)
+// Event listener untuk mouse dan sentuhan
 canvas.addEventListener('mousedown', startDrag);
 canvas.addEventListener('mousemove', doDrag);
 canvas.addEventListener('mouseup', stopDrag);
 canvas.addEventListener('mouseleave', stopDrag);
-
-// 2. Event Listener untuk Sentuhan (Mobile)
-canvas.addEventListener('touchstart', startDrag);
-canvas.addEventListener('touchmove', doDrag);
+canvas.addEventListener('touchstart', startDrag, { passive: false });
+canvas.addEventListener('touchmove', doDrag, { passive: false });
 canvas.addEventListener('touchend', stopDrag);
 canvas.addEventListener('touchcancel', stopDrag);
-
 
 // Event listener untuk tombol download
 downloadBtn.addEventListener('click', () => {
     const link = document.createElement('a');
-    link.download = 'hasil-mpls-2025.png';
+    link.download = 'hasil-twibbon.png';
     link.href = canvas.toDataURL('image/png');
     link.click();
+});
+
+// === FUNGSI BARU UNTUK BERBAGI GAMBAR ===
+shareBtn.addEventListener('click', async () => {
+    // Cek apakah browser mendukung Web Share API
+    if (navigator.share) {
+        canvas.toBlob(async (blob) => {
+            // Buat file dari data blob kanvas
+            const file = new File([blob], 'hasil-twibbon.png', { type: 'image/png' });
+            const shareData = {
+                files: [file],
+                title: 'Foto Twibbon Keren!',
+                text: 'Ini foto saya yang sudah jadi.',
+            };
+            
+            try {
+                // Panggil dialog share
+                await navigator.share(shareData);
+                console.log('Gambar berhasil dibagikan');
+            } catch (err) {
+                console.error('Error saat membagikan:', err);
+            }
+        }, 'image/png');
+    } else {
+        // Fallback jika browser tidak mendukung
+        alert('Fitur "Bagikan" tidak didukung di browser ini. Silakan unduh gambar dan bagikan secara manual.');
+    }
 });
