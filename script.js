@@ -9,7 +9,7 @@ const zoomOutBtn = document.getElementById('zoomOut');
 
 // Variabel untuk menyimpan gambar dan statusnya
 const frameImage = new Image();
-frameImage.src = 'twibbon.png'; 
+frameImage.src = 'twibbonku.png'; 
 
 let userImage = new Image();
 let scale = 1.0;
